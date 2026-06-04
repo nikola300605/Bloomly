@@ -5,7 +5,7 @@ from datetime import datetime
 
 from app.database import get_database
 from app.models.article import ArticleCreate, ArticleUpdate, ArticleOut, CommentCreate, CommentOut
-from app.dependencies import get_current_user_id
+from app.dependencies import get_current_user_id, get_current_user_id_optional
 
 router = APIRouter()
 
@@ -42,7 +42,7 @@ async def list_articles(
     filter: Optional[str] = None,
     skip: int = 0,
     limit: int = 20,
-    user_id: Optional[str] = Depends(get_current_user_id),
+    user_id: Optional[str] = Depends(get_current_user_id_optional),
 ):
     db = get_database()
     query: dict = {}
@@ -67,7 +67,7 @@ async def create_article(article: ArticleCreate, user_id: str = Depends(get_curr
 
 
 @router.get("/{article_id}", response_model=ArticleOut)
-async def get_article(article_id: str, user_id: Optional[str] = Depends(get_current_user_id)):
+async def get_article(article_id: str, user_id: Optional[str] = Depends(get_current_user_id_optional)):
     db = get_database()
     doc = await db.articles.find_one({"_id": ObjectId(article_id)})
     if not doc:

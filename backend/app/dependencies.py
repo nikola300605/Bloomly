@@ -29,3 +29,19 @@ async def get_current_user_id(
             headers={"WWW-Authenticate": "Bearer"},
         )
     return user_id
+
+
+async def get_current_user_id_optional(
+    credentials: HTTPAuthorizationCredentials | None = Depends(_bearer),
+) -> str | None:
+    """Extract and verify the JWT bearer token, returning the user_id (sub) or None if not authenticated."""
+    if credentials is None:
+        return None
+    try:
+        payload = jwt.decode(credentials.credentials, settings.secret_key, algorithms=[settings.algorithm])
+        user_id: str | None = payload.get("sub")
+        if user_id is None:
+            raise ValueError("Missing sub")
+    except (JWTError, ValueError):
+        return None
+    return user_id

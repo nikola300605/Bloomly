@@ -18,11 +18,9 @@ class CareTaskOut(BaseModel):
 
 
 class CompleteTaskRequest(BaseModel):
-    plant_id: str
     kind: str
 
 
 class SnoozeTaskRequest(BaseModel):
-    plant_id: str
     kind: str
     snooze_days: int = 1

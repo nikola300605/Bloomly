@@ -2,7 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-const _baseUrl = String.fromEnvironment('API_BASE_URL', defaultValue: 'http://10.0.2.2:8000');
+const _baseUrl = String.fromEnvironment('API_BASE_URL', defaultValue: 'http://192.168.178.150:8000');
 const _tokenKey = 'bloomly_access_token';
 
 const _storage = FlutterSecureStorage();
