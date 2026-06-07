@@ -1,9 +1,11 @@
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:bloomly/features/auth/screens/login_screen.dart';
 import 'package:bloomly/features/home/screens/home_screen.dart';
 import 'package:bloomly/features/plant_detail/screens/plant_detail_screen.dart';
 import 'package:bloomly/features/add_plant/screens/add_plant_screen.dart';
+import 'package:bloomly/features/add_plant/screens/plant_search_screen.dart';
 import 'package:bloomly/features/scan/screens/scan_camera_screen.dart';
 import 'package:bloomly/features/scan/screens/scan_symptoms_screen.dart';
 import 'package:bloomly/features/scan/screens/scan_results_screen.dart';
@@ -16,12 +18,17 @@ import 'package:bloomly/features/community/screens/write_article_screen.dart';
 import 'package:bloomly/features/profile/screens/profile_screen.dart';
 import 'package:bloomly/shared/widgets/bloomly_bottom_nav.dart';
 
+/// Global messenger key so infrastructure code (e.g. the API client's
+/// session-expiry handler) can show snackbars without a BuildContext.
+final rootScaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+
 /// Named route constants
 abstract final class AppRoutes {
   static const login = '/login';
   static const home = '/home';
   static const plantDetail = '/plants/:plantId';
   static const addPlant = '/add-plant';
+  static const plantSearch = '/add-plant/search';
   static const scan = '/scan';
   static const scanSymptoms = '/scan/symptoms';
   static const scanResults = '/scan/results';
@@ -81,6 +88,10 @@ final appRouter = GoRouter(
     GoRoute(
       path: AppRoutes.addPlant,
       builder: (_, __) => const AddPlantScreen(),
+    ),
+    GoRoute(
+      path: AppRoutes.plantSearch,
+      builder: (_, __) => const PlantSearchScreen(),
     ),
     GoRoute(
       path: AppRoutes.scan,

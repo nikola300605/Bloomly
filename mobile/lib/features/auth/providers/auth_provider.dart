@@ -81,6 +81,13 @@ class AuthNotifier extends StateNotifier<AuthState> {
     await _repo.logout();
     state = const AuthState(status: AuthStatus.unauthenticated);
   }
+
+  /// Called when the API client determines the session can no longer be
+  /// refreshed. The token has already been cleared by the client; here we just
+  /// drop the in-memory auth state so the app reflects the logged-out status.
+  void handleSessionExpired() {
+    state = const AuthState(status: AuthStatus.unauthenticated);
+  }
 }
 
 final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {

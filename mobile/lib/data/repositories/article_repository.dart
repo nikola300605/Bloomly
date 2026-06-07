@@ -24,6 +24,11 @@ class ArticleRepository {
     return ArticleModel.fromJson(res.data as Map<String, dynamic>);
   }
 
+  Future<List<ArticleModel>> listMyArticles({int skip = 0, int limit = 20}) async {
+    final res = await _api.get('/articles/mine', queryParameters: {'skip': skip, 'limit': limit});
+    return (res.data as List).map((e) => ArticleModel.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
   Future<ArticleModel> createArticle(Map<String, dynamic> data) async {
     final res = await _api.post('/articles/', data: data);
     return ArticleModel.fromJson(res.data as Map<String, dynamic>);

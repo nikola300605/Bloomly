@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 import '../../../core/router/app_router.dart';
 import '../../../data/models/scan_result_model.dart';
 import '../../../shared/widgets/care_badge.dart';
+import '../../../shared/widgets/care_guide_card.dart';
+import '../../../shared/widgets/error_placeholder.dart';
 
 /// Step 3/3 — AI diagnosis / identification results.
 class ScanResultsScreen extends StatelessWidget {
@@ -24,7 +26,10 @@ class ScanResultsScreen extends StatelessWidget {
     if (model == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Results')),
-        body: const Center(child: Text('No results to display')),
+        body: ErrorPlaceholder(
+          message: "We couldn't read the scan result. Please try again.",
+          onRetry: () => context.pop(),
+        ),
       );
     }
 
@@ -220,6 +225,11 @@ class _IdentifyView extends StatelessWidget {
                 ),
               )),
           const SizedBox(height: 16),
+
+          // Care guide — surfaces care basics right after identification.
+          const CareGuideCard(),
+          const SizedBox(height: 16),
+
           ElevatedButton(
             onPressed: () => context.push(AppRoutes.addPlant),
             child: const Text('Add this plant'),

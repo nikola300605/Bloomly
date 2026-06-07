@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/router/app_router.dart';
+import '../../../core/utils/error_handler.dart';
+import '../../../shared/widgets/error_placeholder.dart';
 import '../../../shared/widgets/loading_skeleton.dart';
 import '../providers/plants_provider.dart';
 import '../widgets/plant_list_tile.dart';
@@ -94,7 +96,11 @@ class HomeScreen extends ConsumerWidget {
                 itemBuilder: (_, __) => const PlantListTileSkeleton(),
               ),
               error: (e, _) => SliverFillRemaining(
-                child: Center(child: Text('Could not load plants.\n$e', textAlign: TextAlign.center)),
+                hasScrollBody: false,
+                child: ErrorPlaceholder(
+                  message: friendlyError(e, fallback: "Couldn't load your plants. Try again."),
+                  onRetry: () => ref.invalidate(plantsProvider),
+                ),
               ),
             ),
 

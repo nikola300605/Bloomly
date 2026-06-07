@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/error_handler.dart';
 import '../../../data/repositories/article_repository.dart';
+import '../../../shared/widgets/error_placeholder.dart';
 import '../providers/community_provider.dart';
+import '../widgets/comment_sheet.dart';
 
 /// Variation A — long-form reading experience with sticky bottom action bar.
 class ArticleScreen extends ConsumerWidget {
@@ -19,7 +22,10 @@ class ArticleScreen extends ConsumerWidget {
     return Scaffold(
       body: articleAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
+        error: (e, _) => ErrorPlaceholder(
+          message: friendlyError(e, fallback: "Couldn't load this article. Try again."),
+          onRetry: () => ref.invalidate(articleDetailProvider(articleId)),
+        ),
         data: (article) => Stack(
           children: [
             CustomScrollView(
@@ -91,9 +97,7 @@ class ArticleScreen extends ConsumerWidget {
                     _ActionItem(
                       icon: Icons.chat_bubble_outline,
                       label: '${article.commentCount}',
-                      onTap: () {
-                        // TODO: show comments sheet
-                      },
+                      onTap: () => _openComments(context, articleId),
                     ),
                     _ActionItem(
                       icon: article.isSaved ? Icons.bookmark : Icons.bookmark_border,
@@ -115,6 +119,18 @@ class ArticleScreen extends ConsumerWidget {
   }
 
   int _readTime(String body) => (body.split(' ').length / 200).ceil().clamp(1, 99);
+
+  void _openComments(BuildContext context, String articleId) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => CommentSheet(articleId: articleId),
+    );
+  }
 }
 
 class _ActionItem extends StatelessWidget {

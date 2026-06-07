@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/router/app_router.dart';
+import '../../../core/utils/error_handler.dart';
+import '../../../shared/widgets/error_placeholder.dart';
 import '../../../shared/widgets/loading_skeleton.dart';
 import '../providers/community_provider.dart';
 import '../widgets/article_card.dart';
@@ -73,7 +75,10 @@ class _CommunityFeedScreenState extends ConsumerState<CommunityFeedScreen> {
                   child: ArticleCardSkeleton(),
                 ),
               ),
-              error: (e, _) => Center(child: Text('Error: $e')),
+              error: (e, _) => ErrorPlaceholder(
+                message: friendlyError(e, fallback: "Couldn't load posts. Try again."),
+                onRetry: () => ref.invalidate(communityFeedProvider(_filter)),
+              ),
               data: (articles) {
                 if (articles.isEmpty) {
                   return const Center(child: Text('No articles yet — be the first to post!'));

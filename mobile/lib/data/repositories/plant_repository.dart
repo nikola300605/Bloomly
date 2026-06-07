@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/services/reminder_service.dart';
 import '../api/api_client.dart';
 import '../models/plant_model.dart';
 
@@ -22,15 +23,32 @@ class PlantRepository {
 
   Future<PlantModel> createPlant(Map<String, dynamic> data) async {
     final res = await _api.post('/plants/', data: data);
-    return PlantModel.fromJson(res.data as Map<String, dynamic>);
+    final plant = PlantModel.fromJson(res.data as Map<String, dynamic>);
+    // Schedule a watering reminder for the new plant.
+    await ReminderService.scheduleWateringReminder(
+      plantId: plant.id,
+      plantName: plant.displayName,
+      intervalDays: plant.careSchedule.water.intervalDays,
+    );
+    return plant;
   }
 
   Future<PlantModel> updatePlant(String plantId, Map<String, dynamic> data) async {
     final res = await _api.patch('/plants/$plantId', data: data);
-    return PlantModel.fromJson(res.data as Map<String, dynamic>);
+    final plant = PlantModel.fromJson(res.data as Map<String, dynamic>);
+    // Reschedule in case the watering interval changed.
+    await ReminderService.rescheduleReminder(
+      plantId: plant.id,
+      plantName: plant.displayName,
+      intervalDays: plant.careSchedule.water.intervalDays,
+    );
+    return plant;
   }
 
-  Future<void> deletePlant(String plantId) => _api.delete('/plants/$plantId');
+  Future<void> deletePlant(String plantId) async {
+    await _api.delete('/plants/$plantId');
+    await ReminderService.cancelReminder(plantId);
+  }
 
   Future<void> markCareDone(String plantId, String kind) async {
     await _api.post('/plants/$plantId/care/done', data: {'plant_id': plantId, 'kind': kind});

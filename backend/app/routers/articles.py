@@ -66,6 +66,24 @@ async def create_article(article: ArticleCreate, user_id: str = Depends(get_curr
     return await _enrich_article(db, created, user_id)
 
 
+@router.get("/mine", response_model=List[ArticleOut])
+async def list_my_articles(
+    skip: int = 0,
+    limit: int = 20,
+    user_id: str = Depends(get_current_user_id),
+):
+    """The current user's own articles, most recent first."""
+    db = get_database()
+    docs = (
+        await db.articles.find({"author_id": user_id})
+        .sort("created_at", -1)
+        .skip(skip)
+        .limit(limit)
+        .to_list(length=limit)
+    )
+    return [await _enrich_article(db, doc, user_id) for doc in docs]
+
+
 @router.get("/{article_id}", response_model=ArticleOut)
 async def get_article(article_id: str, user_id: Optional[str] = Depends(get_current_user_id_optional)):
     db = get_database()

@@ -85,3 +85,9 @@ logs/
 
 # ─── Claude Code ──────────────────────────────────────────────────────────────
 .claude/
+
+# --- Documentation ------------------------------------------------------------
+IMPLEMENTATION_PLAN.md
+CLAUDE_AUDIT.md
+mobile/CLAUDE_IMPLEMENT.md
+mobile/to_test.md

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/utils/error_handler.dart';
 import '../../../data/repositories/plant_repository.dart';
 import '../../../shared/widgets/care_badge.dart';
+import '../../../shared/widgets/care_guide_card.dart';
+import '../../../shared/widgets/error_placeholder.dart';
 import '../../../shared/widgets/plant_thumbnail.dart';
 import '../../home/providers/plants_provider.dart';
 import '../widgets/health_card.dart';
@@ -22,7 +25,10 @@ class PlantDetailScreen extends ConsumerWidget {
     return Scaffold(
       body: plantAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
+        error: (e, _) => ErrorPlaceholder(
+          message: friendlyError(e, fallback: "Couldn't load this plant. Try again."),
+          onRetry: () => ref.invalidate(plantDetailProvider(plantId)),
+        ),
         data: (plant) => CustomScrollView(
           slivers: [
             SliverAppBar(
@@ -83,6 +89,10 @@ class PlantDetailScreen extends ConsumerWidget {
 
                     // Recommendations card
                     RecommendationsCard(plant: plant),
+                    const SizedBox(height: 12),
+
+                    // Care guide — watering / fertilizing cadence at a glance
+                    CareGuideCard(schedule: plant.careSchedule),
                     const SizedBox(height: 12),
 
                     // Health card

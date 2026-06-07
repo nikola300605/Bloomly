@@ -9,3 +9,8 @@ final communityFeedProvider = FutureProvider.family<List<ArticleModel>, String?>
 final articleDetailProvider = FutureProvider.family<ArticleModel, String>((ref, articleId) {
   return ref.read(articleRepositoryProvider).getArticle(articleId);
 });
+
+/// The current user's own articles (for the profile screen).
+final myArticlesProvider = FutureProvider<List<ArticleModel>>((ref) {
+  return ref.read(articleRepositoryProvider).listMyArticles();
+});

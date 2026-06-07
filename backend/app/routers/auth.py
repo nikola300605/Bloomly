@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime, timedelta
@@ -8,6 +8,7 @@ from passlib.context import CryptContext
 
 from app.config import settings
 from app.database import get_database
+from app.dependencies import get_current_user_id
 
 router = APIRouter()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -83,6 +84,17 @@ async def email_signup(req: EmailSignupRequest):
     }
     result = await db.users.insert_one(doc)
     user_id = str(result.inserted_id)
+    return TokenOut(access_token=create_access_token(user_id), user_id=user_id)
+
+
+@router.post("/refresh", response_model=TokenOut)
+async def refresh_token(user_id: str = Depends(get_current_user_id)):
+    """Re-issue an access token for a still-valid session (sliding session).
+
+    The client calls this proactively shortly before the current token expires.
+    Requires a currently-valid bearer token; an expired token is rejected with
+    401, which signals the client to send the user back to login.
+    """
     return TokenOut(access_token=create_access_token(user_id), user_id=user_id)
 
 

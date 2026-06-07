@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/constants/app_colors.dart';
 import '../../../core/router/app_router.dart';
+import '../add_plant_actions.dart';
 
 /// Variation B — pick-your-method entry screen (recommended in design handoff).
 class AddPlantScreen extends StatelessWidget {
@@ -48,9 +51,7 @@ class AddPlantScreen extends StatelessWidget {
           icon: '🔍',
           title: 'Search by name',
           subtitle: 'Browse our species catalog',
-          onTap: () {
-            // TODO: push plant search screen
-          },
+          onTap: () => context.push(AppRoutes.plantSearch),
         ),
         _Method(
           icon: '📝',
@@ -130,17 +131,60 @@ class _MethodTile extends StatelessWidget {
   }
 }
 
-class _ManualAddSheet extends StatefulWidget {
+class _ManualAddSheet extends ConsumerStatefulWidget {
   const _ManualAddSheet();
 
   @override
-  State<_ManualAddSheet> createState() => _ManualAddSheetState();
+  ConsumerState<_ManualAddSheet> createState() => _ManualAddSheetState();
 }
 
-class _ManualAddSheetState extends State<_ManualAddSheet> {
+class _ManualAddSheetState extends ConsumerState<_ManualAddSheet> {
   final _nameCtrl = TextEditingController();
   final _speciesCtrl = TextEditingController();
   final _locationCtrl = TextEditingController();
+  bool _saving = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _speciesCtrl.dispose();
+    _locationCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    final name = _nameCtrl.text.trim();
+    if (name.isEmpty) {
+      setState(() => _error = 'Please enter a common name.');
+      return;
+    }
+    final species = _speciesCtrl.text.trim();
+    final location = _locationCtrl.text.trim();
+
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+
+    // care_schedule is omitted so the backend applies sensible defaults
+    // (water every 7 days, fertilize every 30).
+    final payload = <String, dynamic>{
+      'common_name': name,
+      'species': species.isNotEmpty ? species : name,
+      if (location.isNotEmpty) 'location': location,
+    };
+
+    final error = await addPlantFromPayload(ref, context, payload, displayName: name);
+    if (!mounted) return;
+    if (error != null) {
+      setState(() {
+        _saving = false;
+        _error = error;
+      });
+    }
+    // On success addPlantFromPayload navigates away; nothing more to do.
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -157,16 +201,20 @@ class _ManualAddSheetState extends State<_ManualAddSheet> {
           TextField(controller: _speciesCtrl, decoration: const InputDecoration(labelText: 'Species (optional)')),
           const SizedBox(height: 10),
           TextField(controller: _locationCtrl, decoration: const InputDecoration(labelText: 'Where does it live?')),
+          if (_error != null) ...[
+            const SizedBox(height: 8),
+            Text(_error!, style: const TextStyle(color: AppColors.danger, fontSize: 12)),
+          ],
           const SizedBox(height: 20),
           SizedBox(
             width: double.infinity,
             height: 48,
             child: ElevatedButton(
-              onPressed: () {
-                // TODO: call PlantRepository.createPlant and navigate to plant detail
-                Navigator.pop(context);
-              },
-              child: const Text('Add plant'),
+              onPressed: _saving ? null : _submit,
+              child: _saving
+                  ? const SizedBox(
+                      width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : const Text('Add plant'),
             ),
           ),
           const SizedBox(height: 20),

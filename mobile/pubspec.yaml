@@ -39,6 +39,10 @@ dependencies:
   # Utils
   intl: ^0.19.0
 
+  # Local notifications (care reminders)
+  flutter_local_notifications: ^17.2.3
+  timezone: ^0.9.4
+
   cupertino_icons: ^1.0.8
 
 dev_dependencies:
