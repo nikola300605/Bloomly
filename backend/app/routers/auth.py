@@ -1,10 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from typing import Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from jose import jwt
 from passlib.context import CryptContext
+
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
 
 from app.config import settings
 from app.database import get_database
@@ -42,7 +45,7 @@ class TokenOut(BaseModel):
 
 
 def create_access_token(user_id: str) -> str:
-    expire = datetime.utcnow() + timedelta(minutes=settings.access_token_expire_minutes)
+    expire = datetime.now(timezone.utc) + timedelta(minutes=settings.access_token_expire_minutes)
     return jwt.encode(
         {"sub": user_id, "exp": expire},
         settings.secret_key,
@@ -53,12 +56,31 @@ def create_access_token(user_id: str) -> str:
 @router.post("/google", response_model=TokenOut)
 async def auth_google(req: GoogleAuthRequest):
     """Verify a Google Sign-In id_token and upsert the user."""
-    # TODO: verify with google.oauth2.id_token.verify_oauth2_token()
-    # from google.oauth2 import id_token
-    # from google.auth.transport import requests as grequests
-    # idinfo = id_token.verify_oauth2_token(req.id_token, grequests.Request(), settings.google_client_id)
-    raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Google auth not yet wired up")
+    try:
+        idinfo = id_token.verify_oauth2_token(req.id_token, google_requests.Request(), settings.google_client_id)
+    
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Google token")
+    
+    email = idinfo.get("email")
+    if not email:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Google token missing email")
+    name = idinfo.get("name", email.split("@")[0])
+    db = get_database()
+    user = await db.users.find_one({"email": email})
+    if not user:
+        ## New user, create an account
+        res = await db.users.insert_one({
+            "email": email,
+            "name": name,
+            "handle": email.split("@")[0],
+            "created_at": datetime.now(timezone.utc),  
+        })
+        user_id = str(res.inserted_id)
+    else:
+        user_id = str(user["_id"])
 
+    return TokenOut(access_token=create_access_token(user_id), user_id=user_id)
 
 @router.post("/apple", response_model=TokenOut)
 async def auth_apple(req: AppleAuthRequest):

@@ -36,4 +36,11 @@ class AuthRepository {
   Future<void> logout() => _api.clearToken();
 
   Future<bool> isLoggedIn() => _api.hasToken();
+
+  Future<String> loginWithGoogle(String idToken) async {
+    final response = await _api.post('/auth/google', data: {'id_token': idToken});
+    final token = response.data['access_token'] as String;
+    await _api.saveToken(token);
+    return response.data['user_id'] as String;
+  }
 }

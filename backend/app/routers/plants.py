@@ -4,7 +4,7 @@ from bson import ObjectId
 from datetime import datetime
 
 from app.database import get_database
-from app.models.plant import PlantCreate, PlantUpdate, PlantOut, CareBadge
+from app.models.plant import PlantCreate, PlantUpdate, PlantOut, CareBadge, HealthLogEntryCreate
 from app.models.care_task import CareTaskOut, CompleteTaskRequest, SnoozeTaskRequest
 from app.services.care_scheduler import compute_care_badge, get_care_tasks
 from app.dependencies import get_current_user_id
@@ -83,6 +83,22 @@ async def delete_plant(plant_id: str, user_id: str = Depends(get_current_user_id
     result = await db.plants.delete_one({"_id": ObjectId(plant_id), "owner_id": user_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Plant not found")
+
+
+@router.post("/{plant_id}/health-log", response_model=PlantOut)
+async def add_health_log(plant_id: str, entry: HealthLogEntryCreate, user_id: str = Depends(get_current_user_id)):
+    """Append an entry to a plant's health log (e.g. saving a scan diagnosis after the fact)."""
+    db = get_database()
+    log_entry = entry.model_dump()
+    log_entry["timestamp"] = datetime.utcnow()
+    result = await db.plants.update_one(
+        {"_id": ObjectId(plant_id), "owner_id": user_id},
+        {"$push": {"health_log": log_entry}},
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Plant not found")
+    doc = await db.plants.find_one({"_id": ObjectId(plant_id), "owner_id": user_id})
+    return _plant_to_out(doc)
 
 
 @router.post("/{plant_id}/care/done")

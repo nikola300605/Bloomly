@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -43,6 +45,42 @@ android {
 
 flutter {
     source = "../.."
+}
+
+// Dev convenience: tunnel localhost:8000 on every attached device/emulator back
+// to this machine (`adb reverse`), so debug builds reach the local backend with
+// plain `flutter run` — no manual tunnel, no --dart-define. Best-effort: a
+// missing adb or device never fails the build.
+val backendPort = 8000
+val adbPath: String = run {
+    val props = Properties()
+    val localProperties = rootProject.file("local.properties")
+    if (localProperties.exists()) localProperties.inputStream().use { props.load(it) }
+    val sdkDir = props.getProperty("sdk.dir") ?: System.getenv("ANDROID_HOME")
+    val exe = if (System.getProperty("os.name").lowercase().contains("win")) ".exe" else ""
+    if (sdkDir != null) "$sdkDir/platform-tools/adb$exe" else "adb"
+}
+val adbReverse = tasks.register("adbReverse") {
+    doLast {
+        runCatching {
+            val devices = ProcessBuilder(adbPath, "devices").start()
+                .inputStream.bufferedReader().readText()
+                .lines().drop(1)
+                .mapNotNull { line ->
+                    val parts = line.trim().split(Regex("\\s+"))
+                    if (parts.size >= 2 && parts[1] == "device") parts[0] else null
+                }
+            devices.forEach { serial ->
+                ProcessBuilder(adbPath, "-s", serial, "reverse", "tcp:$backendPort", "tcp:$backendPort")
+                    .start().waitFor()
+            }
+        }.onFailure { logger.warn("adbReverse skipped: ${it.message}") }
+    }
+}
+tasks.whenTaskAdded {
+    // `flutter run` builds via assembleDebug (it installs with its own adb);
+    // installDebug covers direct Gradle/Android Studio native installs.
+    if (name == "assembleDebug" || name == "installDebug") dependsOn(adbReverse)
 }
 
 dependencies {

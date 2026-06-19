@@ -1,9 +1,9 @@
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/router/app_router.dart';
+import '../../../core/utils/error_handler.dart';
 import '../providers/auth_provider.dart';
 
 /// Variation B — hero + social-first (recommended in design handoff).
@@ -66,11 +66,24 @@ class LoginScreen extends ConsumerWidget {
                   label: 'Continue with Google',
                   icon: '🇬',
                   primary: true,
-                  onPressed: () {
-                    // TODO: implement Google Sign-In
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Google auth coming soon')),
-                    );
+                  onPressed: () async {
+                    try {
+                      await ref.read(authProvider.notifier).loginWithGoogle();
+                      if (context.mounted) context.go(AppRoutes.home);
+                    } catch (e) {
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(friendlyError(e)),
+                          action: SnackBarAction(
+                            label: 'Dismiss',
+                            onPressed: () {
+                              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                            },
+                          ),
+                        ),
+                      );
+                    }
                   },
                 ),
                 const SizedBox(height: 10),
@@ -281,20 +294,7 @@ class _EmailLoginSheetState extends ConsumerState<_EmailLoginSheet> {
         context.go(AppRoutes.home);
       }
     } catch (e) {
-      String message;
-      if (e is DioException) {
-        final data = e.response?.data;
-        if (data is Map && data['detail'] != null) {
-          message = data['detail'].toString();
-        } else if (e.response != null) {
-          message = 'Server error ${e.response!.statusCode}';
-        } else {
-          message = 'Could not reach server — is the backend running?\n(${e.message})';
-        }
-      } else {
-        message = e.toString();
-      }
-      setState(() { _error = message; _loading = false; });
+      setState(() { _error = friendlyError(e); _loading = false; });
     }
   }
 }

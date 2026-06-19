@@ -23,6 +23,13 @@ class HealthLogEntry(BaseModel):
     notes: Optional[str] = None
 
 
+class HealthLogEntryCreate(BaseModel):
+    source: str = "scan"
+    diagnosis: Optional[str] = None
+    photo_url: Optional[str] = None
+    notes: Optional[str] = None
+
+
 class PlantCreate(BaseModel):
     species: str
     common_name: str

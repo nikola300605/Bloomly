@@ -3,6 +3,7 @@
 .env.local
 .env.*.local
 !.env.example
+googleOauthWeb.json
 
 # ─── Python / FastAPI ─────────────────────────────────────────────────────────
 __pycache__/
@@ -91,3 +92,4 @@ IMPLEMENTATION_PLAN.md
 CLAUDE_AUDIT.md
 mobile/CLAUDE_IMPLEMENT.md
 mobile/to_test.md
+googelOauth.json

@@ -38,7 +38,7 @@ class PlantDetailScreen extends ConsumerWidget {
               actions: [
                 IconButton(
                   icon: const Icon(Icons.more_horiz),
-                  onPressed: () => _showOptions(context, ref, repo),
+                  onPressed: () => _showOptions(context, ref),
                 )
               ],
             ),
@@ -108,7 +108,8 @@ class PlantDetailScreen extends ConsumerWidget {
     );
   }
 
-  void _showOptions(BuildContext context, WidgetRef ref, PlantRepository repo) {
+  void _showOptions(BuildContext context, WidgetRef ref) {
+    final repo = ref.read(plantRepositoryProvider);
     showModalBottomSheet(
       context: context,
       builder: (_) => Wrap(
@@ -126,7 +127,24 @@ class PlantDetailScreen extends ConsumerWidget {
             title: const Text('Delete plant', style: TextStyle(color: Colors.red)),
             onTap: () async {
               Navigator.pop(context);
+              final confirmed = await showDialog<bool>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Text('Delete plant?'),
+                  content: const Text('This cannot be undone.'),
+                  actions: [
+                    TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx, true),
+                      child: const Text('Delete', style: TextStyle(color: Colors.red)),
+                    ),
+                  ],
+                ),
+              );
+              if (confirmed != true) return;
+              if (!context.mounted) return;
               await repo.deletePlant(plantId);
+              ref.invalidate(plantsProvider);
               if (context.mounted) Navigator.pop(context);
             },
           ),

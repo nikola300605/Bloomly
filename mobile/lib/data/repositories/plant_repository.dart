@@ -50,6 +50,15 @@ class PlantRepository {
     await ReminderService.cancelReminder(plantId);
   }
 
+  Future<PlantModel> addHealthLog(String plantId, {String? diagnosis, String? notes}) async {
+    final res = await _api.post('/plants/$plantId/health-log', data: {
+      'source': 'scan',
+      'diagnosis': diagnosis,
+      'notes': notes,
+    });
+    return PlantModel.fromJson(res.data as Map<String, dynamic>);
+  }
+
   Future<void> markCareDone(String plantId, String kind) async {
     await _api.post('/plants/$plantId/care/done', data: {'plant_id': plantId, 'kind': kind});
   }
